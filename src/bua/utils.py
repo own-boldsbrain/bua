@@ -75,8 +75,7 @@ def create_cua_response(**kwargs):
     return response.json()
 
 def create_bua_response(**kwargs):
-    # url = "https://api.notte.cc/bua"
-    url = "http://localhost:8000/bua"
+    url = "https://api.notte.cc/bua"
 
     headers = {"Authorization": f"Bearer {os.getenv('NOTTE_API_KEY')}", "Content-Type": "application/json"}
 
