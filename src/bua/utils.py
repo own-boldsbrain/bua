@@ -1,4 +1,5 @@
 import os
+from functools import singledispatch
 import requests
 from dotenv import load_dotenv
 import json
@@ -47,7 +48,15 @@ def sanitize_message(msg: dict) -> dict:
     return msg
 
 
-def create_response(**kwargs):
+def create_response(model: str, **kwargs):
+    if model.startswith("bua"):
+        return create_bua_response(model=model, **kwargs)
+    elif model.startswith("computer-use"):
+        return create_cua_response(model=model, **kwargs)
+    else:
+        raise NotImplementedError(f"Model: {model}")
+
+def create_cua_response(**kwargs):
     url = "https://api.openai.com/v1/responses"
     headers = {
         "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
@@ -64,6 +73,20 @@ def create_response(**kwargs):
         print(f"Error: {response.status_code} {response.text}")
 
     return response.json()
+
+def create_bua_response(**kwargs):
+    # url = "https://api.notte.cc/bua"
+    url = "http://localhost:8000/bua"
+
+    headers = {"Authorization": f"Bearer {os.getenv('NOTTE_API_KEY')}", "Content-Type": "application/json"}
+
+    response = requests.post(url, headers=headers, json=kwargs)
+
+    if response.status_code != 200:
+        print(f"Error: {response.status_code} {response.text}")
+
+    return response.json()
+
 
 
 def check_blocklisted_url(url: str) -> None:

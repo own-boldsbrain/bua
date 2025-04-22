@@ -3,7 +3,7 @@ import time
 from dotenv import load_dotenv
 from scrapybara import Scrapybara
 from playwright.sync_api import sync_playwright, Browser, Page
-from utils import BLOCKED_DOMAINS
+from bua.utils import BLOCKED_DOMAINS
 
 load_dotenv()
 

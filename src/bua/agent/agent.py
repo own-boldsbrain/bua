@@ -1,5 +1,9 @@
-from computers import Computer
-from utils import (
+from pydantic import BaseModel
+from bua.computers.actions import ActionUnion, CompletionAction, InteractionAction
+import logging
+from bua.computers.computer import Browser
+from bua.computers import Computer
+from bua.utils import (
     create_response,
     show_image,
     pp,
@@ -8,7 +12,11 @@ from utils import (
 )
 import json
 from typing import Callable
+from halo import Halo
 
+
+class ActionParse(BaseModel):
+    action: ActionUnion
 
 class Agent:
     """
@@ -25,7 +33,7 @@ class Agent:
         acknowledge_safety_check_callback: Callable = lambda: False,
     ):
         self.model = model
-        self.computer = computer
+        self.computer: Computer | Browser = computer
         self.tools = tools
         self.print_steps = True
         self.debug = False
@@ -53,6 +61,47 @@ class Agent:
             if self.print_steps:
                 print(item["content"][0]["text"])
 
+        if item["type"] == "browser_call":
+
+            if not self.model.startswith("bua"):
+                raise NotImplementedError("Can only use browser calls with bua ")
+
+            if not isinstance(self.computer, Browser):
+                raise NotImplementedError(f"Cannot execute browser calls on computer of type {type(self.computer)}")
+
+            action = item["action"]
+
+            # TODO: transform from dict back to action
+
+            action_model = ActionParse(action=action)
+            if isinstance(action_model.action, CompletionAction):
+                print(f"✅ Step finished: {action_model.action.answer}")
+                return [{"type": "message", "role": "assistant", "content": action_model.action.answer}]
+            elif isinstance(action_model.action, InteractionAction):
+                logging.info(f"✅ Step: {action_model.action.execution_message()}")
+
+            with Halo(action_model.action.execution_message()):
+                self.computer.execute_action(action_model.action)
+
+            screenshot_base64 = self.computer.screenshot()
+            dom = self.computer.dom()
+
+            # TODO: safety checks
+
+            call_output = {
+                "type": "browser_call_output",
+                "call_id": item["call_id"],
+                "acknowledged_safety_checks": [],
+                "output": {"type": "bua_output", "image_url": f"data:image/png;base64,{screenshot_base64}", "dom": dom},
+            }
+
+            # additional URL safety checks for browser environments
+            current_url = self.computer.get_current_url()
+            check_blocklisted_url(current_url)
+            call_output["output"]["current_url"] = current_url
+
+            return [call_output]
+
         if item["type"] == "function_call":
             name, args = item["name"], json.loads(item["arguments"])
             if self.print_steps:
@@ -70,6 +119,8 @@ class Agent:
             ]
 
         if item["type"] == "computer_call":
+            if not self.model.startswith("computer-use"):
+                raise NotImplementedError("Can only use computer calls with bua")
             action = item["action"]
             action_type = action["type"]
             action_args = {k: v for k, v in action.items() if k != "type"}
@@ -123,12 +174,13 @@ class Agent:
         while new_items[-1].get("role") != "assistant" if new_items else True:
             self.debug_print([sanitize_message(msg) for msg in input_items + new_items])
 
-            response = create_response(
-                model=self.model,
-                input=input_items + new_items,
-                tools=self.tools,
-                truncation="auto",
-            )
+            with Halo("Thinking"):
+                response = create_response(
+                    model=self.model,
+                    input=input_items + new_items,
+                    tools=self.tools,
+                    truncation="auto",
+                )
             self.debug_print(response)
 
             if "output" not in response and self.debug:

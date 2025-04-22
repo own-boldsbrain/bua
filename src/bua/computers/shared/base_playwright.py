@@ -1,8 +1,11 @@
+from pathlib import Path
 import time
 import base64
-from typing import List, Dict, Literal
+from typing import ClassVar, List, Dict
 from playwright.sync_api import sync_playwright, Browser, Page
-from utils import check_blocklisted_url
+from bua.computers.actions import BaseAction, BrowserAction, InteractionAction, locate_element, short_wait
+from bua.computers.computer import DomTreeDict
+from bua.utils import check_blocklisted_url
 
 # Optional: key mapping if your model uses "CUA" style keys
 CUA_KEY_TO_PLAYWRIGHT_KEY = {
@@ -45,11 +48,14 @@ class BasePlaywrightComputer:
       - We also have extra browser actions: `goto(url)` and `back()`.
     """
 
+    DOM_TREE_JS_PATH: ClassVar[Path] = Path(__file__).parent.parent / "buildDomNode.js"
+
+
     def get_environment(self):
         return "browser"
 
     def get_dimensions(self):
-        return (1024, 768)
+        return (1280, 1080)
 
     def __init__(self):
         self._playwright = None
@@ -152,3 +158,29 @@ class BasePlaywrightComputer:
     def _get_browser_and_page(self) -> tuple[Browser, Page]:
         """Subclasses must implement, returning (Browser, Page)."""
         raise NotImplementedError
+
+    def dom(self) -> DomTreeDict:
+        js_code = BasePlaywrightComputer.DOM_TREE_JS_PATH.read_text()
+        parsing_config = dict(highlight_elements=True, focus_element=-1, viewport_expansion=500)
+
+        eval = self._page.evaluate(js_code, parsing_config)
+
+        if eval is None:
+            raise ValueError("Can't get dom from current page")
+
+        return eval
+
+
+    def execute_action(self, action: BaseAction) -> None:
+        """Execute the provided action: necessary for browsers"""
+        if isinstance(action, BrowserAction):
+            # TODO: pass a browser context instead of the full browser?
+            action.execute(self._page.context, self._page)
+        elif isinstance(action, InteractionAction):
+            assert action.selectors is not None
+            locator = locate_element(self._page, action.selectors)
+            action.execute(self._page.context, self._page, locator)
+        else:
+            raise ValueError(f"Invalid action type: {type(action)}")
+
+        short_wait(self._page)

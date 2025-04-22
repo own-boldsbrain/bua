@@ -1,5 +1,5 @@
 from playwright.sync_api import Browser, Page
-from ..shared.base_playwright import BasePlaywrightComputer
+from bua.computers.shared.base_playwright import BasePlaywrightComputer
 
 
 class LocalPlaywrightBrowser(BasePlaywrightComputer):
@@ -20,10 +20,15 @@ class LocalPlaywrightBrowser(BasePlaywrightComputer):
             chromium_sandbox=True,
             headless=self.headless,
             args=launch_args,
-            env={"DISPLAY": ":0"},
         )
 
-        context = browser.new_context()
+        context = browser.new_context(
+            no_viewport=False,
+            viewport={
+                "width": 1280,
+                "height": 1080,
+            },
+        )
 
         # Add event listeners for page creation and closure
         context.on("page", self._handle_new_page)
@@ -38,7 +43,6 @@ class LocalPlaywrightBrowser(BasePlaywrightComputer):
 
     def _handle_new_page(self, page: Page):
         """Handle the creation of a new page."""
-        print("New page created")
         self._page = page
         page.on("close", self._handle_page_close)
 

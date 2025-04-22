@@ -1,8 +1,9 @@
 import argparse
-from agent.agent import Agent
-from computers.config import *
-from computers.default import *
-from computers import computers_config
+from typing import Literal
+from bua.agent.agent import Agent
+from bua.computers.config import *
+from bua.computers.default import *
+from bua.computers import computers_config
 
 
 def acknowledge_safety_check_callback(message: str) -> bool:
@@ -16,40 +17,55 @@ def main():
     parser = argparse.ArgumentParser(
         description="Select a computer environment from the available options."
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--computer",
         choices=computers_config.keys(),
         help="Choose the computer environment to use.",
         default="local-playwright",
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--input",
         type=str,
         help="Initial input to use instead of asking the user.",
         default=None,
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--debug",
         action="store_true",
         help="Enable debug mode for detailed output.",
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--show",
         action="store_true",
         help="Show images during the execution.",
     )
-    parser.add_argument(
+    _ = parser.add_argument(
         "--start-url",
         type=str,
         help="Start the browsing session with a specific URL (only for browser environments).",
         default="https://bing.com",
     )
+    _ = parser.add_argument(
+        "--model",
+        type=str,
+        choices=["bua", "cua"],
+        help="The reasoning model to use",
+        default="bua",
+    )
     args = parser.parse_args()
     ComputerClass = computers_config[args.computer]
+
+    if args.model == "bua":
+        model = "bua-v1"
+    elif args.model == "cua":
+        model = "computer-use-preview"
+    else:
+        raise ValueError(f"invalid model {args.model}")
 
     with ComputerClass() as computer:
         agent = Agent(
             computer=computer,
+            model=model,
             acknowledge_safety_check_callback=acknowledge_safety_check_callback,
         )
         items = []
