@@ -1,8 +1,8 @@
-# Browser Using Agent
+![bua-banner (1)](https://github.com/user-attachments/assets/8c21e357-742b-4693-950d-04ac73d8d72d)
 
-Get started building a Browser Using Agent (BUA) with the Notte API.
+## Your fast track to a browser using agent
 
-## Set Up & Run
+![2025-04-23 11-46-22](https://github.com/user-attachments/assets/9774aa35-c7b3-45a2-949e-e7a7552cda83)
 
 Set up python env and install dependencies.
 
@@ -12,7 +12,7 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-Run CLI to let BUA use a local browser window, using [playwright](https://playwright.dev/). (Stop with CTRL+C)
+Run the CLI to let BUA start a local browser window, using [playwright](https://playwright.dev/). (Stop with CTRL+C)
 
 ```shell
 python -m bua
@@ -29,7 +29,7 @@ Other included sample [browser environments](#browser-environments):
 
 ## Overview
 
-The browser use tool and model are available via the Responses API. At a high level, BUA will look at a screenshot and the DOM elements of the browser interface and recommend actions. You can learn more about this tool in the Browser Using Agent guide.
+BUA acts similarly to tha typical [computer-use](https://platform.openai.com/docs/models/computer-use-preview) completion model. At a high level, BUA will look at a screenshot and the DOM elements of the browser interface and output an action, than can easily be executed from any browser driver.
 
 ## Abstractions
 
@@ -37,25 +37,22 @@ This repository defines two lightweight abstractions to make interacting with BU
 
 | Abstraction | File                   | Description                                                                                                                                                                                               |
 | ----------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Browser`   | `browsers/browsers.py` | Defines a `Browser` interface for various environments (local desktop, remote browser, etc.). An implementation of `Browser` is responsible for executing any `browser_action` sent by BUA (clicks, etc). |
+| `Browser`   | `computers/computer.py` | Defines a `Browser` interface for various environments (local desktop, remote browser, etc.). An implementation of `Browser` is responsible for executing any `browser_action` sent by BUA (clicks, etc). Any CUA computer can also implement the browser interface if they which to be compatible.|
 | `Agent`     | `agent/agent.py`       | Simple, familiar agent loop – implements `run_full_turn()`, which just keeps calling the model until all browser actions and function calls are handled.                                                  |
 
 ## CLI Usage
 
 The CLI (`cli.py`) is the easiest way to get started with BUA. It accepts the following arguments:
 
-- `--browser`: The browser environment to use. See the [Browser Environments](#browser-environments) section below for options. By default, the CLI will use the `local-playwright` environment.
-- `--input`: The initial input to the agent (optional: the CLI will prompt you for input if not provided)
-- `--debug`: Enable debug mode.
-- `--show`: Show images (screenshots) during the execution.
-- `--start-url`: Start the browsing session with a specific URL (only for browser environments)
+- `--computer`: The browser environment to use. See the [Browser Environments](#browser-environments) section below for options. By default, the CLI will use the `local-playwright` environment.
+- `--model`: The computer using model to use. Currently compatible with `bua` and `cua`.
 
 ## Drop in replacement for computer-use
 
 BUA can work with any `Browser` environment that can handle BUA actions.
 If your `Browser` relied on playwright, they are even already implemented!
 
-Not convinced? You can run a task using computer-use-preview instead, and compare with bua:
+Not convinced? You can run a task using [computer-use-preview](https://platform.openai.com/docs/models/computer-use-preview) instead, and compare with bua:
 
 ```
 python -m bua --model cua
@@ -74,13 +71,13 @@ This sample app provides a set of implemented `Browser` examples, but feel free 
 Using the CLI, you can run the sample app with different browser environments using the options listed above:
 
 ```shell
-python -m bua --show --browser <browser-option>
+python -m bua --computer <browser-option>
 ```
 
-For example, to run the sample app with the `Notte` browser environment, you can run:
+For example, to run the sample app, and have your browser hosted by `Notte`, you can run:
 
 ```shell
-python -m bua --show --browser notte
+python -m bua --browser notte
 ```
 
 ## Function Calling
