@@ -154,6 +154,14 @@ class InteractionAction(BaseAction, metaclass=ABCMeta):
 # Special actions
 # ############################################################
 
+class HelpAction(BaseAction):
+    type: Literal["help"] = "help"
+    description: str = Field(default="Ask for clarification", exclude=True)
+    reason: str
+
+    @override
+    def _execution_message(self) -> str:
+        return f"Requir{{suffix}} help for task: {self.reason}"
 
 class CompletionAction(BaseAction):
     type: Literal["completion"] = "completion"

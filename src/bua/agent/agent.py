@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from bua.computers.actions import ActionUnion, CompletionAction, InteractionAction
+from bua.computers.actions import ActionUnion, CompletionAction, HelpAction, InteractionAction
 import logging
 from bua.computers.computer import Browser
 from bua.computers import Computer
@@ -78,13 +78,22 @@ class Agent:
 
             action_model = ActionParse(action=action)
             if isinstance(action_model.action, CompletionAction):
-                status_emoji = "❌" if action_model.action.success else "❌" 
+                status_emoji = "✅" if action_model.action.success else "❌" 
                 print(f"{status_emoji} Step finished: {action_model.action.answer}")
                 return [
                     {
                         "type": "message",
                         "role": "assistant",
                         "content": action_model.action.answer,
+                    }
+                ]
+            elif isinstance(action_model.action, HelpAction):
+                print(f"Requiring more help for the task: {action_model.action.reason}")
+                return [
+                    {
+                        "type": "message",
+                        "role": "assistant",
+                        "content": action_model.action.reason,
                     }
                 ]
             elif isinstance(action_model.action, InteractionAction):
