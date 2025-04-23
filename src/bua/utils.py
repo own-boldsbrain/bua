@@ -1,5 +1,4 @@
 import os
-from functools import singledispatch
 import requests
 from dotenv import load_dotenv
 import json
@@ -56,11 +55,12 @@ def create_response(model: str, **kwargs):
     else:
         raise NotImplementedError(f"Model: {model}")
 
+
 def create_cua_response(**kwargs):
     url = "https://api.openai.com/v1/responses"
     headers = {
         "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
 
     openai_org = os.getenv("OPENAI_ORG")
@@ -74,18 +74,23 @@ def create_cua_response(**kwargs):
 
     return response.json()
 
-def create_bua_response(**kwargs):
-    url = "https://api.notte.cc/bua"
 
-    headers = {"Authorization": f"Bearer {os.getenv('NOTTE_API_KEY')}", "Content-Type": "application/json"}
+def create_bua_response(**kwargs):
+    notte_url = os.getenv("NOTTE_API_URL", "https://api.notte.cc")
+    url = os.path.join(notte_url, "bua")
+
+    headers = {
+        "Authorization": f"Bearer {os.getenv('NOTTE_API_KEY')}",
+        "Content-Type": "application/json",
+    }
 
     response = requests.post(url, headers=headers, json=kwargs)
+    response.raise_for_status()
 
     if response.status_code != 200:
         print(f"Error: {response.status_code} {response.text}")
 
     return response.json()
-
 
 
 def check_blocklisted_url(url: str) -> None:

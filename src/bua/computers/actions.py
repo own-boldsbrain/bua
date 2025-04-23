@@ -365,7 +365,6 @@ class ScrollDownAction(BrowserAction):
 
     @override
     def execute(self, browser: Window, page: Page) -> None:
-        logging.warning(f"Scroll {page=} down by {str(self.amount) + ' pixels' if self.amount is not None else 'one page'}")
         if self.amount is not None:
             page.mouse.wheel(delta_x=0, delta_y=self.amount)
         else:

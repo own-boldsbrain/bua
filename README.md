@@ -4,7 +4,14 @@
 
 ![2025-04-23 11-46-22](https://github.com/user-attachments/assets/9774aa35-c7b3-45a2-949e-e7a7552cda83)
 
-Set up python env and install dependencies.
+Create an account over on [console.notte.cc](https://console.notte.cc/start), and create an api key.
+
+Load your api key as an environment variable (or create a .env file, following the example in .env.example). 
+```
+export NOTTE_API_KEY=<YOUR_API_KEY>
+```
+
+Set up a python virtual environment and install dependencies (pypi package coming soon).
 
 ```shell
 python3 -m venv .venv

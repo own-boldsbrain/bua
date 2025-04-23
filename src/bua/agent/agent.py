@@ -11,12 +11,13 @@ from bua.utils import (
     check_blocklisted_url,
 )
 import json
-from typing import Callable
+from typing import Any, Callable
 from halo import Halo
 
 
 class ActionParse(BaseModel):
     action: ActionUnion
+
 
 class Agent:
     """
@@ -39,6 +40,7 @@ class Agent:
         self.debug = False
         self.show_images = False
         self.acknowledge_safety_check_callback = acknowledge_safety_check_callback
+        self.usages: list[dict[str, Any]] = []
 
         if computer:
             dimensions = computer.get_dimensions()
@@ -62,12 +64,13 @@ class Agent:
                 print(item["content"][0]["text"])
 
         if item["type"] == "browser_call":
-
             if not self.model.startswith("bua"):
                 raise NotImplementedError("Can only use browser calls with bua ")
 
             if not isinstance(self.computer, Browser):
-                raise NotImplementedError(f"Cannot execute browser calls on computer of type {type(self.computer)}")
+                raise NotImplementedError(
+                    f"Cannot execute browser calls on computer of type {type(self.computer)}"
+                )
 
             action = item["action"]
 
@@ -75,8 +78,15 @@ class Agent:
 
             action_model = ActionParse(action=action)
             if isinstance(action_model.action, CompletionAction):
-                print(f"✅ Step finished: {action_model.action.answer}")
-                return [{"type": "message", "role": "assistant", "content": action_model.action.answer}]
+                status_emoji = "❌" if action_model.action.success else "❌" 
+                print(f"{status_emoji} Step finished: {action_model.action.answer}")
+                return [
+                    {
+                        "type": "message",
+                        "role": "assistant",
+                        "content": action_model.action.answer,
+                    }
+                ]
             elif isinstance(action_model.action, InteractionAction):
                 logging.info(f"✅ Step: {action_model.action.execution_message()}")
 
@@ -92,7 +102,11 @@ class Agent:
                 "type": "browser_call_output",
                 "call_id": item["call_id"],
                 "acknowledged_safety_checks": [],
-                "output": {"type": "bua_output", "image_url": f"data:image/png;base64,{screenshot_base64}", "dom": dom},
+                "output": {
+                    "type": "bua_output",
+                    "image_url": f"data:image/png;base64,{screenshot_base64}",
+                    "dom": dom,
+                },
             }
 
             # additional URL safety checks for browser environments
@@ -163,7 +177,11 @@ class Agent:
         return []
 
     def run_full_turn(
-        self, input_items, print_steps=True, debug=False, show_images=False
+        self,
+        input_items,
+        print_steps=True,
+        debug=False,
+        show_images=False,
     ):
         self.print_steps = print_steps
         self.debug = debug
@@ -171,7 +189,9 @@ class Agent:
         new_items = []
 
         # keep looping until we get a final response
+        # or run out of steps
         while new_items[-1].get("role") != "assistant" if new_items else True:
+
             self.debug_print([sanitize_message(msg) for msg in input_items + new_items])
 
             with Halo("Thinking"):
@@ -181,6 +201,8 @@ class Agent:
                     tools=self.tools,
                     truncation="auto",
                 )
+                if self.model.startswith("bua"):
+                    self.usages.append(response["usage"])
             self.debug_print(response)
 
             if "output" not in response and self.debug:

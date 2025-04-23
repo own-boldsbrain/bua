@@ -1,9 +1,12 @@
 import argparse
-from typing import Literal
 from bua.agent.agent import Agent
 from bua.computers.config import *
 from bua.computers.default import *
 from bua.computers import computers_config
+
+from dotenv import load_dotenv
+
+_ = load_dotenv()
 
 
 def acknowledge_safety_check_callback(message: str) -> bool:
