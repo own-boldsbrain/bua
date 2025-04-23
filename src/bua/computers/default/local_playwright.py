@@ -23,18 +23,13 @@ class LocalPlaywrightBrowser(BasePlaywrightComputer):
         )
 
         context = browser.new_context(
-            no_viewport=False,
-            viewport={
-                "width": 1280,
-                "height": 1080,
-            },
+            no_viewport=True,
         )
 
         # Add event listeners for page creation and closure
         context.on("page", self._handle_new_page)
 
         page = context.new_page()
-        page.set_viewport_size({"width": width, "height": height})
         page.on("close", self._handle_page_close)
 
         page.goto("https://bing.com")
