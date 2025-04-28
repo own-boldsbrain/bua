@@ -36,7 +36,7 @@ Other included sample [browser environments](#browser-environments):
 
 ## Overview
 
-BUA acts similarly to tha typical [computer-use](https://platform.openai.com/docs/models/computer-use-preview) completion model. At a high level, BUA will look at a screenshot and the DOM elements of the browser interface and output an action, than can easily be executed from any browser driver.
+BUA acts similarly to the typical [computer-use](https://platform.openai.com/docs/models/computer-use-preview) completion model. At a high level, BUA will look at a screenshot and the DOM elements of the browser interface and output an action, that can easily be executed from any browser driver.
 
 ## Abstractions
 
