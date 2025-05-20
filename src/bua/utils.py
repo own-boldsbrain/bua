@@ -77,7 +77,7 @@ def create_cua_response(**kwargs):
 
 def create_bua_response(**kwargs):
     notte_url = os.getenv("NOTTE_API_URL", "https://api.notte.cc")
-    url = os.path.join(notte_url, "bua")
+    url = os.path.join(notte_url, "bua", "completions")
 
     headers = {
         "Authorization": f"Bearer {os.getenv('NOTTE_API_KEY')}",
