@@ -12,7 +12,7 @@ from typing import Callable, List, Dict, Optional
 from datetime import datetime
 
 # Importações específicas do projeto Homologacao
-from api.services.distribuidoras_gd_service import DistribuidorasGDService
+from api.services.gd.distribuidoras_gd_service import DistribuidorasGDService
 
 
 class ActionParse(BaseModel):
@@ -110,13 +110,15 @@ class HomologadorAgent(Agent):
             return
 
         try:
-            distribuidora = DistribuidorasGDService.obter_distribuidora(
+            service = DistribuidorasGDService()
+            distribuidora = service.obter_distribuidora_por_codigo(
                 self.distribuidora_codigo
             )
             if distribuidora:
-                self.distribuidora_data = distribuidora
+                self.distribuidora_data = distribuidora.model_dump()
                 self.logger.info(
-                    f"Dados da distribuidora {self.distribuidora_codigo} " "carregados"
+                    f"Dados da distribuidora {self.distribuidora_codigo} "
+                    "carregados"
                 )
             else:
                 self.logger.warning(
@@ -127,14 +129,16 @@ class HomologadorAgent(Agent):
 
     def _get_portal_url(self) -> Optional[str]:
         """Obtém a URL do portal de homologação da distribuidora"""
-        if self.distribuidora_data and "portal_homologacao" in self.distribuidora_data:
+        if (self.distribuidora_data and
+                "portal_homologacao" in self.distribuidora_data):
             portal = self.distribuidora_data["portal_homologacao"]
             return portal.get("url")
         return None
 
     def _get_autenticacao_info(self) -> Optional[Dict]:
         """Obtém informações de autenticação do portal"""
-        if self.distribuidora_data and "portal_homologacao" in self.distribuidora_data:
+        if (self.distribuidora_data and
+                "portal_homologacao" in self.distribuidora_data):
             portal = self.distribuidora_data["portal_homologacao"]
             return portal.get("autenticacao")
         return None
@@ -283,7 +287,9 @@ class HomologadorAgent(Agent):
                 return [self.consultar_orgao_regulador(orgao, consulta)]
 
         # Caso contrário, usar comportamento padrão
-        return super().run_full_turn(input_items, print_steps, debug, show_images)
+        return super().run_full_turn(
+            input_items, print_steps, debug, show_images
+        )
 
 
 # Função auxiliar para criar instância do agente homologador
