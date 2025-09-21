@@ -8,7 +8,6 @@ from pydantic import BaseModel
 from bua.computers.actions import ActionUnion
 import logging
 from bua.computers import Computer
-from bua.utils import check_blocklisted_url
 from typing import Callable, List, Dict, Optional
 from datetime import datetime
 
@@ -39,7 +38,9 @@ class Agent:
         self.print_steps = True
         self.debug = False
         self.show_images = False
-        self.acknowledge_safety_check_callback = acknowledge_safety_check_callback
+        self.acknowledge_safety_check_callback = (
+            acknowledge_safety_check_callback
+        )
         self.usages: list[dict] = []
 
         if computer:
@@ -80,7 +81,8 @@ class Agent:
 class HomologadorAgent(Agent):
     """
     Agente autônomo especializado em homologação 360º de projetos de GD.
-    Interage automaticamente com portais de distribuidoras e órgãos responsáveis.
+    Interage automaticamente com portais de distribuidoras e órgãos
+    responsáveis.
     """
 
     def __init__(
@@ -92,7 +94,9 @@ class HomologadorAgent(Agent):
         projeto_id: Optional[str] = None,
         distribuidora_codigo: Optional[str] = None,
     ):
-        super().__init__(model, computer, tools, acknowledge_safety_check_callback)
+        super().__init__(
+            model, computer, tools, acknowledge_safety_check_callback
+        )
 
         self.projeto_id = projeto_id
         self.distribuidora_codigo = distribuidora_codigo
@@ -116,7 +120,8 @@ class HomologadorAgent(Agent):
             if distribuidora:
                 self.distribuidora_data = distribuidora
                 self.logger.info(
-                    f"Dados da distribuidora {self.distribuidora_codigo} carregados"
+                    f"Dados da distribuidora {self.distribuidora_codigo} "
+                    "carregados"
                 )
             else:
                 self.logger.warning(
@@ -128,24 +133,24 @@ class HomologadorAgent(Agent):
     def _get_portal_url(self) -> Optional[str]:
         """Obtém a URL do portal de homologação da distribuidora"""
         if (self.distribuidora_data and
-                'portal_homologacao' in self.distribuidora_data):
-            portal = self.distribuidora_data['portal_homologacao']
-            return portal.get('url')
+                "portal_homologacao" in self.distribuidora_data):
+            portal = self.distribuidora_data["portal_homologacao"]
+            return portal.get("url")
         return None
 
     def _get_autenticacao_info(self) -> Optional[Dict]:
         """Obtém informações de autenticação do portal"""
         if (self.distribuidora_data and
-                'portal_homologacao' in self.distribuidora_data):
-            portal = self.distribuidora_data['portal_homologacao']
-            return portal.get('autenticacao')
+                "portal_homologacao" in self.distribuidora_data):
+            portal = self.distribuidora_data["portal_homologacao"]
+            return portal.get("autenticacao")
         return None
 
     def _get_documentos_requeridos(self) -> List[Dict]:
         """Obtém lista de documentos requeridos para homologação"""
         if (self.distribuidora_data and
-                'documentos_requeridos' in self.distribuidora_data):
-            return self.distribuidora_data['documentos_requeridos']
+                "documentos_requeridos" in self.distribuidora_data):
+            return self.distribuidora_data["documentos_requeridos"]
         return []
 
     def iniciar_homologacao(self, projeto_data: Dict) -> List[Dict]:
@@ -201,14 +206,14 @@ class HomologadorAgent(Agent):
 
     def _realizar_autenticacao(self, auth_info: Dict):
         """Realiza autenticação no portal"""
-        metodo = auth_info.get('metodo', 'login_senha')
+        metodo = auth_info.get("metodo", "login_senha")
 
-        if metodo == 'login_senha':
+        if metodo == "login_senha":
             # Implementar login com usuário/senha
             self.logger.info("Realizando autenticação com login/senha")
             # Aqui seria implementada a lógica específica de cada portal
             pass
-        elif metodo == 'certificado_digital':
+        elif metodo == "certificado_digital":
             # Implementar autenticação com certificado
             self.logger.info("Realizando autenticação com certificado digital")
             pass
@@ -256,12 +261,6 @@ class HomologadorAgent(Agent):
         """
         self.logger.info(f"Consultando {orgao} sobre {consulta}")
 
-        # Navegar para portal do órgão
-        if orgao.lower() == 'aneel':
-            url = "https://www.aneel.gov.br"
-        else:
-            url = f"https://www.{orgao}.gov.br"
-
         # Implementar consulta específica
         return {
             "orgao": orgao,
@@ -289,14 +288,16 @@ class HomologadorAgent(Agent):
                 return [self.consultar_orgao_regulador(orgao, consulta)]
 
         # Caso contrário, usar comportamento padrão
-        return super().run_full_turn(input_items, print_steps, debug, show_images)
+        return super().run_full_turn(
+            input_items, print_steps, debug, show_images
+        )
 
 
 # Função auxiliar para criar instância do agente homologador
 def create_homologador_agent(
     projeto_id: str,
     distribuidora_codigo: str,
-    computer: Computer = None,
+    computer: Optional[Computer] = None,
     model: str = "computer-use-preview"
 ) -> HomologadorAgent:
     """
