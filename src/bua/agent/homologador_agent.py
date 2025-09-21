@@ -38,9 +38,7 @@ class Agent:
         self.print_steps = True
         self.debug = False
         self.show_images = False
-        self.acknowledge_safety_check_callback = (
-            acknowledge_safety_check_callback
-        )
+        self.acknowledge_safety_check_callback = acknowledge_safety_check_callback
         self.usages: list[dict] = []
 
         if computer:
@@ -94,9 +92,7 @@ class HomologadorAgent(Agent):
         projeto_id: Optional[str] = None,
         distribuidora_codigo: Optional[str] = None,
     ):
-        super().__init__(
-            model, computer, tools, acknowledge_safety_check_callback
-        )
+        super().__init__(model, computer, tools, acknowledge_safety_check_callback)
 
         self.projeto_id = projeto_id
         self.distribuidora_codigo = distribuidora_codigo
@@ -120,8 +116,7 @@ class HomologadorAgent(Agent):
             if distribuidora:
                 self.distribuidora_data = distribuidora
                 self.logger.info(
-                    f"Dados da distribuidora {self.distribuidora_codigo} "
-                    "carregados"
+                    f"Dados da distribuidora {self.distribuidora_codigo} " "carregados"
                 )
             else:
                 self.logger.warning(
@@ -132,24 +127,24 @@ class HomologadorAgent(Agent):
 
     def _get_portal_url(self) -> Optional[str]:
         """Obtém a URL do portal de homologação da distribuidora"""
-        if (self.distribuidora_data and
-                "portal_homologacao" in self.distribuidora_data):
+        if self.distribuidora_data and "portal_homologacao" in self.distribuidora_data:
             portal = self.distribuidora_data["portal_homologacao"]
             return portal.get("url")
         return None
 
     def _get_autenticacao_info(self) -> Optional[Dict]:
         """Obtém informações de autenticação do portal"""
-        if (self.distribuidora_data and
-                "portal_homologacao" in self.distribuidora_data):
+        if self.distribuidora_data and "portal_homologacao" in self.distribuidora_data:
             portal = self.distribuidora_data["portal_homologacao"]
             return portal.get("autenticacao")
         return None
 
     def _get_documentos_requeridos(self) -> List[Dict]:
         """Obtém lista de documentos requeridos para homologação"""
-        if (self.distribuidora_data and
-                "documentos_requeridos" in self.distribuidora_data):
+        if (
+            self.distribuidora_data
+            and "documentos_requeridos" in self.distribuidora_data
+        ):
             return self.distribuidora_data["documentos_requeridos"]
         return []
 
@@ -288,9 +283,7 @@ class HomologadorAgent(Agent):
                 return [self.consultar_orgao_regulador(orgao, consulta)]
 
         # Caso contrário, usar comportamento padrão
-        return super().run_full_turn(
-            input_items, print_steps, debug, show_images
-        )
+        return super().run_full_turn(input_items, print_steps, debug, show_images)
 
 
 # Função auxiliar para criar instância do agente homologador
@@ -298,7 +291,7 @@ def create_homologador_agent(
     projeto_id: str,
     distribuidora_codigo: str,
     computer: Optional[Computer] = None,
-    model: str = "computer-use-preview"
+    model: str = "computer-use-preview",
 ) -> HomologadorAgent:
     """
     Cria uma instância do agente homologador configurada
