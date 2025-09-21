@@ -1,0 +1,2 @@
+temporalio
+# Adicione outras dependências do worker aqui
