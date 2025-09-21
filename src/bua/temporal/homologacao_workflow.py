@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from temporalio.client import Client
 from temporalio.common import RetryPolicy
 from temporalio import workflow, activity
+import httpx
 
 from api.core.config import settings
 from api.models.homologacao_models import HomologacaoJobRequest, JobStatus
@@ -155,6 +156,50 @@ async def submeter_documentos_activity(
         }
 
 
+@activity.defn
+async def enviar_notificacao_listmonk_activity(
+    status: str, job_details: Dict[str, Any]
+) -> Dict[str, Any]:
+    """
+    Atividade para enviar notificação via Listmonk.
+
+    Args:
+        status: Status do job (ex: "concluído", "falhou").
+        job_details: Detalhes do job para incluir no e-mail.
+
+    Returns:
+        Resultado do envio da notificação.
+    """
+    logger.info(f"Enviando notificação de status '{status}' para o projeto {job_details.get('projeto_id')}")
+
+    listmonk_api_url = getattr(settings, "LISTMONK_API_URL", "http://listmonk:9000/api/tx")
+    # Em um cenário real, o ID do template e o e-mail do assinante viriam do banco de dados ou da requisição.
+    template_id = 1 if status == "concluído" else 2  # Exemplo: template 1 para sucesso, 2 para falha
+    subscriber_email = "usuario@exemplo.com"  # E-mail de exemplo
+
+    payload = {
+        "subscriber_email": subscriber_email,
+        "template_id": template_id,
+        "data": {
+            "projeto_id": job_details.get("projeto_id"),
+            "distribuidora": job_details.get("distribuidora_codigo"),
+            "status": status,
+            "detalhes": job_details.get("error") or "Processo finalizado com sucesso.",
+            "timestamp": datetime.now().isoformat(),
+        },
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(listmonk_api_url, json=payload, auth=(settings.LISTMONK_API_USER, settings.LISTMONK_API_PASSWORD))
+            response.raise_for_status()
+            logger.info("Notificação enviada com sucesso via Listmonk.")
+            return {"status": "success", "response": response.json()}
+    except httpx.RequestError as e:
+        logger.error(f"Erro ao enviar notificação para Listmonk: {e}")
+        return {"status": "failed", "error": str(e)}
+
+
 # Definição do workflow de homologação
 @workflow.defn
 class HomologacaoWorkflow:
@@ -210,6 +255,14 @@ class HomologacaoWorkflow:
                 }
             )
 
+            # Enviar notificação de falha
+            await workflow.execute_activity(
+                enviar_notificacao_listmonk_activity,
+                "falhou",
+                {"projeto_id": projeto_id, "distribuidora_codigo": distribuidora_codigo, "error": resultado_inicio["error"]},
+                start_to_close_timeout=timedelta(minutes=1),
+            )
+
             return {
                 "job_id": workflow.info().workflow_id,
                 "status": JobStatus.FAILED.value,
@@ -251,6 +304,14 @@ class HomologacaoWorkflow:
                 "timestamp": datetime.now().isoformat(),
                 "result": resultado_consulta,
             }
+        )
+
+        # Enviar notificação de sucesso
+        await workflow.execute_activity(
+            enviar_notificacao_listmonk_activity,
+            "concluído",
+            {"projeto_id": projeto_id, "distribuidora_codigo": distribuidora_codigo},
+            start_to_close_timeout=timedelta(minutes=1),
         )
 
         # Workflow concluído
